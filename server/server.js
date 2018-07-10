@@ -4,6 +4,12 @@ const _ = require('lodash');
 const {ObjectID} = require('mongodb');
 // const Transaction = require('mongoose-transactions');
 // const transaction = new Transaction();
+var createError = require('http-errors');
+var favicon = require('serve-favicon');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
+var session = require('express-session');
 
 
 var {mongoose} = require('./db/mongoose');
@@ -20,6 +26,11 @@ var Transaction = require('mongoose-transaction')(mongoose);
 
 
 var app = express();
+var urlencodedParser = bodyParser.urlencoded({ extended: false })
+var path = require('path');
+const publicPath = path.join(__dirname,'../views/admin/production');
+app.use(express.static(publicPath));
+console.log(publicPath)
 const port = process.env.PORT;
 
 app.use(bodyParser.json());
@@ -29,7 +40,9 @@ app.use(bodyParser.json());
 app.post('/admin', (req, res) => {
 
     var body = _.pick(req.body, ['user_name', 'password', 'email']);
+    console.log(body);
     var admin = new ContestAdmin(body);
+
 
     admin.save().then(() => {
 
@@ -80,19 +93,38 @@ app.delete('/admin/:id', (req, res) => {
 
 // contest admin login--start
 
-app.post('/admin/login', (req, res) => {
-    var body = _.pick(req.body, ['email', 'password']);
+app.post('/admin/login',urlencodedParser, (req, res) => {
+    // var nameValue = document.getElementById("email").value;
+    // console.log(nameValue)
+    var body = ({
+        email:req.body.email,
+        password:req.body.password
+    });
+    // console.log(req.body(email))
+    console.log(body);
+
+    // var body = _.pick(req.body, [ 'password', 'email']);
+     // var body = _.pick(req.body, ['email', 'password']);
+    // console.log("aa"+email)
+
 
 
     ContestAdmin.findByCredentials(body.email, body.password).then((admin) => {
         return admin.generateAuthToken().then((token) => {
-            res.header('x-auth', token).send(admin);
+         // res.header('x-auth', token).send(admin);
+            res.setHeader('x-auth', token)
+
+            res.sendFile('index.html', {root : __dirname + '../../views/admin/production'});
+            // console.log(header)
+            // res.header('x-auth', token).send(admin);
+            // res.setHeader('x-auth', token)
+
         });
     }).catch((e) => {
         res.status(400).send();
-        if (res.status(401).send()){
-            console.log("login failed");
-        }
+
+
+
     });
 });
 
@@ -500,21 +532,50 @@ app.post('/contestants/:id', (req, res) => {
         res.status(400).send();
     });
 
-
-
-
-
-
-
-
-
-
 });
 
 
 
 // create contestant--end
 
+//
+//
+// app.use(express.static(__dirname + '../../views'));
+// app.set('production', __dirname + '/views/admin/production');
+// console.log(app.mountpath)
+// app.engine('html', require('ejs').renderFile);
+// app.set('view engine', 'html');
+//
+// app.use(bodyParser.urlencoded({
+//     extended: true
+// }));
+// app.use(bodyParser.json());
+// -----------------------------------------------------------------------------------------
+
+//
+// app.get('/', function(req, res){
+//     console.log(app.mountpath)
+//     res.sendFile('login.html', {root : __dirname + '../../views/admin/production'});
+//
+//      // res.render('index.html');
+// });
+//
+
+// app.set('production', path.join(__dirname,'/views','admin/production'));
+// app.set('view engine', 'html');
+// app.use(logger('dev'));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: false }));
+// app.use(cookieParser());
+// app.use(express.static(path.join(__dirname, '/view','/admin')));
+// app.use(session({secret:'whatever',resave:true,saveUninitialized:true}));
+//
+// app.get('/', function (req,res) {
+//     res.render('index.html')
+//
+// });
+
 app.listen(3000, () => {
     console.log(`Started up at port ${3000}`);
 });
+
